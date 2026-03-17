@@ -10,7 +10,7 @@
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
-
+<audio id="sound-stamp" src="./images/stamp.mp3" preload="auto"></audio>
     <div class="app-container">
         <!-- タイトルエリア -->
         <div class="title-container">
@@ -22,7 +22,8 @@
         <div class="location-section">
             <button class="btn-get" id="btn-get">現在地を取得</button>
             <div id="location-display">
-                ボタンを押してスタンプをGET！
+                ボタンを押してスタンプをGET！<br>
+                <small>（※今はテスト中なので、どこにいてもスタンプが押せるよ！）</small>
             </div>
         </div>
 
@@ -52,7 +53,6 @@
                 <div class="stamp-status-placeholder">??</div>
             </div>
         </div>
-
         <!-- コンプリート表示エリア -->
         <div id="complete-area">
             <!-- altを空にすることで音声読み上げの重複を防ぎ、画像のみを表示 -->
@@ -184,10 +184,17 @@
                 let foundAny = false;
                 spots.forEach((spot) => {
                     if (!spot.obtained) {
-                        // 判定範囲を 20m (20m) に設定
-                        if (getDistance(lat, lng, spot.lat, spot.lng) < 20) { 
+                        // 判定範囲を 2000km に設定(）
+                        if (getDistance(lat, lng, spot.lat, spot.lng) < 2000000) { 
                             spot.obtained = true;
                             foundAny = true;
+
+                            // ★ここで音を鳴らす！
+                            const stampSound = document.getElementById('sound-stamp');
+                            if (stampSound) {
+                                stampSound.currentTime = 0;
+                                stampSound.play().catch(e => console.log("再生ブロック:", e));
+                            }
                         }
                     }
                 });
@@ -200,7 +207,7 @@
                 setDisplayMessage("読み込めていません", `(エラー: ${err.message})`, true);
             }, { enableHighAccuracy: true, timeout: 5000 });
         });
-
+        
         // リセットボタン
         btnReset.addEventListener('click', () => {
             if(confirm("獲得したスタンプをすべてリセットしますか？")) {
@@ -210,10 +217,10 @@
                 setDisplayMessage("リセットしました");
             }
         });
-
+        
         // 初期実行
         loadStorage();
         updateUI();
-    </script>
-</body>
-</html>
+     </script> 
+ </body> 
+</html> 
