@@ -1,0 +1,219 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ご近所スタンプラリー</title>
+    <!-- 外部CSSの読み込み -->
+    <link rel="stylesheet" href="style.css">
+    <!-- PWA設定ファイルの読み込み -->
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- タイトルエリア -->
+        <div class="title-container">
+            <img src="icon/icon-192.png" alt="icon" class="app-icon" onerror="this.style.display='none'">
+            <h1 id="app-title">ご近所スタンプラリー</h1>
+        </div>
+
+        <!-- 位置情報取得セクション -->
+        <div class="location-section">
+            <button class="btn-get" id="btn-get">現在地を取得</button>
+            <div id="location-display">
+                ボタンを押してスタンプをGET！
+            </div>
+        </div>
+
+        <hr>
+
+        <!-- スタンプ表示エリア -->
+        <div class="stamp-grid">
+            <div class="stamp-card" id="stamp-0">
+                <div class="stamp-name">ぼん徹</div>
+                <div class="stamp-image-container">
+                    <img src="images/stamp1.png" alt="ぼん徹" class="stamp-image" onerror="this.style.opacity='0'">
+                </div>
+                <div class="stamp-status-placeholder">??</div>
+            </div>
+            <div class="stamp-card" id="stamp-1">
+                <div class="stamp-name">めんきちラーメン</div>
+                <div class="stamp-image-container">
+                    <img src="images/stamp2.png" alt="めんきちラーメン" class="stamp-image" onerror="this.style.opacity='0'">
+                </div>
+                <div class="stamp-status-placeholder">??</div>
+            </div>
+            <div class="stamp-card" id="stamp-2">
+                <div class="stamp-name">慶華園</div>
+                <div class="stamp-image-container">
+                    <img src="images/stamp3.png" alt="慶華園" class="stamp-image" onerror="this.style.opacity='0'">
+                </div>
+                <div class="stamp-status-placeholder">??</div>
+            </div>
+        </div>
+
+        <!-- コンプリート表示エリア -->
+        <div id="complete-area">
+            <!-- altを空にすることで音声読み上げの重複を防ぎ、画像のみを表示 -->
+            <img src="images/kirakira3.png" alt="" class="complete-icon">
+            <p class="complete-text" id="complete-msg">スタンプを集めよう！</p>
+            <button id="btn-reset" style="margin-top:10px; font-size: 0.7rem; opacity: 0.6; cursor: pointer; padding: 5px 10px; border-radius: 5px; border: 1px solid #ccc; background: #fff;">データをリセット</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * 1. サービスワーカー (sw.js) の登録
+         */
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+
+        /**
+         * 2. アプリのロジック
+         */
+        const spots = [
+            { name: "ぼん徹", lat: 32.78247, lng: 130.76071, obtained: false },
+            { name: "めんきちラーメン", lat: 32.78207, lng: 130.76080, obtained: false },
+            { name: "慶華園", lat: 32.78316, lng: 130.76085, obtained: false }
+        ];
+
+        const btnGet = document.getElementById('btn-get');
+        const display = document.getElementById('location-display');
+        const completeArea = document.getElementById('complete-area');
+        const completeMsg = document.getElementById('complete-msg');
+        const btnReset = document.getElementById('btn-reset');
+
+        // ローカルストレージからデータを読み込み
+        function loadStorage() {
+            const saved = localStorage.getItem('stamp_data');
+            if (saved) {
+                try {
+                    const savedData = JSON.parse(saved);
+                    spots.forEach((spot, i) => {
+                        spot.obtained = savedData[i] || false;
+                    });
+                } catch (e) {
+                    setDisplayMessage("読み込めていません", "(データの読み込みに失敗しました)", true);
+                }
+            }
+        }
+
+        // データをローカルストレージに保存
+        function saveStorage() {
+            const status = spots.map(s => s.obtained);
+            localStorage.setItem('stamp_data', JSON.stringify(status));
+        }
+
+        // 2点間の距離を計算 (m)
+        function getDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371000;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        // UI（見た目）を更新
+        function updateUI() {
+            let count = 0;
+            spots.forEach((spot, index) => {
+                const card = document.getElementById(`stamp-${index}`);
+                if (spot.obtained) {
+                    card.classList.add('obtained');
+                    count++;
+                } else {
+                    card.classList.remove('obtained');
+                }
+            });
+
+            if (count === spots.length) {
+                completeMsg.textContent = "おめでとう！コンプリート！";
+                completeArea.classList.add('is-complete');
+                completeMsg.classList.add('is-complete');
+            } else {
+                completeMsg.textContent = count > 0 ? `あと ${spots.length - count} つ！` : "スタンプを集めよう！";
+                completeArea.classList.remove('is-complete');
+                completeMsg.classList.remove('is-complete');
+            }
+        }
+
+        // メッセージ表示用関数 (textContent を使用して安全に描画)
+        function setDisplayMessage(primaryMsg, secondaryMsg = "", isError = false) {
+            display.textContent = ""; 
+            
+            const line1 = document.createElement("div");
+            line1.textContent = primaryMsg;
+            display.appendChild(line1);
+            
+            if (secondaryMsg) {
+                const line2 = document.createElement("div");
+                line2.textContent = secondaryMsg;
+                if (isError) line2.style.color = "red";
+                display.appendChild(line2);
+            }
+        }
+
+        // 位置情報取得ボタンのクリックイベント
+        btnGet.addEventListener('click', () => {
+            if (!navigator.geolocation) {
+                setDisplayMessage("読み込めていません", "(位置情報非対応)", true);
+                return;
+            }
+            
+            display.textContent = "位置を判定中...";
+            btnGet.disabled = true;
+
+            navigator.geolocation.getCurrentPosition((pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                
+                setDisplayMessage(`緯度: ${lat.toFixed(5)}`, `経度: ${lng.toFixed(5)}`);
+                
+                let foundAny = false;
+                spots.forEach((spot) => {
+                    if (!spot.obtained) {
+                        // 判定範囲を 20m (20m) に設定
+                        if (getDistance(lat, lng, spot.lat, spot.lng) < 20) { 
+                            spot.obtained = true;
+                            foundAny = true;
+                        }
+                    }
+                });
+
+                if (foundAny) saveStorage();
+                updateUI();
+                btnGet.disabled = false;
+            }, (err) => {
+                btnGet.disabled = false;
+                setDisplayMessage("読み込めていません", `(エラー: ${err.message})`, true);
+            }, { enableHighAccuracy: true, timeout: 5000 });
+        });
+
+        // リセットボタン
+        btnReset.addEventListener('click', () => {
+            if(confirm("獲得したスタンプをすべてリセットしますか？")) {
+                spots.forEach(s => s.obtained = false);
+                saveStorage();
+                updateUI();
+                setDisplayMessage("リセットしました");
+            }
+        });
+
+        // 初期実行
+        loadStorage();
+        updateUI();
+    </script>
+</body>
+</html>

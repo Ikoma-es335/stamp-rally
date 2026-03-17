@@ -1,0 +1,131 @@
+﻿:root {
+    --primary-color: #4CAF50;
+    --secondary-color: #2196F3;
+    --bg-color: #f0f4f8;
+    --card-bg: #ffffff;
+    --text-color: #333;
+    --complete-gold: #fbc02d;
+}
+
+body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background-color: var(--bg-color);
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.app-container {
+    width: 90%;
+    max-width: 400px;
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.title-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.app-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+}
+
+h1 { font-size: 1.4rem; color: var(--primary-color); margin: 0; }
+
+.location-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #e7f3ff;
+    border-radius: 15px;
+}
+
+.btn-get {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 50px;
+    width: 100%;
+    cursor: pointer;
+}
+
+.btn-get:disabled { background-color: #ccc; }
+
+#location-display {
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: #555;
+    min-height: 3em;
+}
+
+.stamp-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.stamp-card {
+    background: #fff;
+    border: 2px solid #eee;
+    border-radius: 12px;
+    padding: 10px 5px;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stamp-card.obtained {
+    border-color: var(--primary-color);
+    background-color: #e8f5e9;
+}
+
+.stamp-name { font-size: 0.65rem; font-weight: bold; margin-bottom: 5px; height: 2.5em; }
+
+.stamp-image { width: 100px; height:100px; display: none; }
+.stamp-card.obtained .stamp-image { display: block; }
+.stamp-card.obtained .stamp-status-placeholder { display: none; }
+
+#complete-area {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 15px;
+    border: 3px dashed var(--primary-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#complete-area.is-complete {
+    background-color: #fff9c4;
+    border-color: var(--complete-gold);
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+.complete-icon { width: 40px; height: 40px; display: none; }
+#complete-area.is-complete .complete-icon { display: block; }
+
+/* style.css の一番下に追加 */
+.complete-text.is-complete {
+    color: #ff0000; /* 赤色 */
+    font-weight: bold;
+    font-size: 1.6rem;
+}
